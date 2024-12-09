@@ -2,11 +2,35 @@
 clear
 url=$1
 
+# Function to ensure downloaded videos are compatible with Android
+download_compatible_video() {
+    # Force mp4 container with h264 video codec and aac audio codec
+    # These are widely supported by Android devices
+    yt-dlp -f "bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[ext=mp4]" \
+        --merge-output-format mp4 \
+        --prefer-ffmpeg \
+        --postprocessor-args "-codec:v libx264 -codec:a aac" \
+        "$1" \
+        -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
+}
+
+# Function to download audio only
+download_audio() {
+    yt-dlp -x \
+        --audio-format mp3 \
+        --audio-quality 0 \
+        --prefer-ffmpeg \
+        "$1" \
+        -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
+}
+
 # Check if the URL contains "YouTube" or "youTube"
 if [[ $url == *"YouTube"* ]] || [[ $url == *"youTube"* ]]; then
-    # Download audio in MP3 format
-    yt-dlp -x --audio-format mp3 -f bestaudio --audio-quality 0 "$url" -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
+    echo "Downloading audio from YouTube..."
+    download_audio "$url"
 else
-    # Download video in MP4 format
-    yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' "$url" -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
+    echo "Downloading video..."
+    download_compatible_video "$url"
 fi
+
+echo "Download complete!"
