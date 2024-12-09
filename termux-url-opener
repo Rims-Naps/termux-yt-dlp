@@ -1,18 +1,12 @@
-
-can you help me to #!/bin/bash
+#!/bin/bash
 clear
+url=$1
 
-PLAYLIST="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(n_entries-playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
-CHANNEL="%(extractor)s/%(uploader)s_%(channel_id)s/%(title)s [%(id)s].%(ext)s"
-
-if [[ "$1" =~ ^.*youtu.*$ ]] || [[ "$1" =~ ^.*youtube.*$ ]]; then
-    echo -e "Downloading audio...\\n>URL: ${1}\\n"
-    yt-dlp -x --audio-format mp3 -o "$CHANNEL" "$1"
-elif [[ "$1" =~ ^.*nourlselected.*$ ]]; then
-    echo "There was an error"
+# Check if the URL contains "YouTube" or "youTube"
+if [[ $url == *"YouTube"* ]] || [[ $url == *"youTube"* ]]; then
+    # Download audio in MP3 format
+    yt-dlp -x --audio-format mp3 -f bestaudio --audio-quality 0 "$url" -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
 else
-    echo -e "Downloading video...\\n>URL: ${1}\\n"
-    yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' -o "$CHANNEL" "$1"
+    # Download video in MP4 format
+    yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' "$url" -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
 fi
-
-#read -p "Press enter to continue"

@@ -1,27 +1,15 @@
-#!/usr/bin/env bash
-set -euo pipefail
+#!/bin/bash
+# Clean Install
+rm -f "/data/data/com.termux/files/home/bin/termux-url-opener"
+mkdir -p /data/data/com.termux/files/home/bin
 
-BLUE='\e[34m'
-NC='\e[0m'
-YTDLP_CONFIG_FOLDER="${HOME}/.config/yt-dlp/"
-TERMUXURLOPENER_CONFIG_FOLDER="${HOME}/bin/"
+# Installing dependencies
+pkg update -y && pkg install wget -y && pkg install python -y && pkg install ffmpeg -y
+yes | pip install yt-dlp
 
-echo "Hi, This script setup an environment to download various videos from various apps"
-sleep 1
-echo -e "\n\n${BLUE}Requirements:${NC}"
-echo -e "    1. Allow storage access to Termux."
-echo -e "    2. A working internet connection.\n\n"
-read -p "When you are ready just press enter:"
+# Downloading the modified termux-url-opener script
+wget --no-check-certificate --output-document="/data/data/com.termux/files/home/bin/termux-url-opener" "https://your-repository-url/termux-url-opener"
+chmod +x "/data/data/com.termux/files/home/bin/termux-url-opener"
 
-# Basic setup
+# Setup storage access
 termux-setup-storage
-sleep 2
-pkg update
-pkg install python ffmpeg
-pip install -U wheel
-pip install -U yt-dlp
-mkdir -p $TERMUXURLOPENER_CONFIG_FOLDER
-cp -r yt-dlp ~/.config/
-cp termux-url-opener "${TERMUXURLOPENER_CONFIG_FOLDER}/"
-
-echo -e "${BLUE}Congratulations!!! Your setup is complete.${NC}\n\n"
