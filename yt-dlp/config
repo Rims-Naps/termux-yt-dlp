@@ -1,6 +1,7 @@
 --windows-filenames
 --write-subs
 --write-auto-subs
+#--embed-subs
 --sub-format srt
 --convert-subs srt
 --sub-langs en
@@ -11,12 +12,7 @@
 --sponsorblock-remove sponsor,selfpromo,interaction
 --no-mtime
 --no-abort-on-error
---concurrent-fragments 3
---format-sort quality
---format-sort-force
---progress
---console-title
---geo-bypass
---ignore-errors
---no-playlist-reverse
---throttled-rate 100K
+#--skip-playlist-after-errors 20
+--playlist-reverse
+-P "~/storage/shared/Download/"
+-o "%(extractor)s/%(uploader)s/%(playlist)s/%(playlist_index)s - %(title)s [%(id)s].%(ext)s"

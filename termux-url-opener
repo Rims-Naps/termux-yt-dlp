@@ -1,141 +1,18 @@
-#!/bin/bash
 
-# Enhanced termux-url-opener with improved content type detection and error handling
-# Maintains playlist support while adding specific handling for different content types
+can you help me to #!/bin/bash
+clear
 
-# Define base directories
-BASE_DIR="/data/data/com.termux/files/home/storage/shared"
-DOWNLOAD_DIR="$BASE_DIR/Download"
-MUSIC_DIR="$BASE_DIR/Music"
-YOUTUBE_DIR="$BASE_DIR/YouTube"
-UNKNOWN_DIR="$BASE_DIR/Unknown"
+PLAYLIST="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(n_entries-playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
+CHANNEL="%(extractor)s/%(uploader)s_%(channel_id)s/%(title)s [%(id)s].%(ext)s"
 
-# Create all necessary directories
-for dir in "$MUSIC_DIR" "$YOUTUBE_DIR" "$UNKNOWN_DIR" "$DOWNLOAD_DIR"; do
-    mkdir -p "$dir"
-done
-
-# Get URL from command line
-url="$1"
-
-# Function to sanitize filenames
-sanitize_filename() {
-    echo "$1" | sed 's/[^a-zA-Z0-9._-]/_/g'
-}
-
-# Function to validate URL
-validate_url() {
-    if [[ -z "$1" ]]; then
-        echo "Error: No URL provided" >&2
-        exit 1
-    fi
-}
-
-# Function to determine if URL is a playlist
-is_playlist() {
-    [[ "$url" == *"playlist"* ]] || [[ "$url" == *"list="* ]]
-}
-
-# Enhanced content type detection with specific format settings
-get_content_settings() {
-    local content_type="unknown"
-    local format="bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best"
-    local output_dir="$UNKNOWN_DIR"
-    local filename_template="%(title)s.%(ext)s"
-
-    case "$url" in
-        *"music.youtube.com"*)
-            content_type="music"
-            format="bestaudio[ext=m4a]/bestaudio"
-            output_dir="$MUSIC_DIR"
-            filename_template="%(artist,uploader)s - %(title)s.%(ext)s"
-            ;;
-        *"youtube.com"*|*"youtu.be"*)
-            content_type="video"
-            output_dir="$YOUTUBE_DIR"
-            filename_template="%(title)s [%(resolution)s].%(ext)s"
-            ;;
-        *"soundcloud.com"*)
-            content_type="music"
-            format="bestaudio[ext=m4a]/bestaudio"
-            output_dir="$MUSIC_DIR"
-            filename_template="%(artist,uploader)s - %(title)s.%(ext)s"
-            ;;
-        *)
-            content_type="unknown"
-            output_dir="$UNKNOWN_DIR"
-            ;;
-    esac
-    
-    echo "$content_type:$format:$output_dir:$filename_template"
-}
-
-# Function to handle download progress
-show_progress() {
-    echo "Downloading: $1"
-    echo "Type: $2"
-    echo "Output Directory: $3"
-}
-
-# Main execution starts here
-validate_url "$url"
-
-# Process URL and determine settings
-content_settings=$(get_content_settings)
-content_type=$(echo "$content_settings" | cut -d':' -f1)
-format=$(echo "$content_settings" | cut -d':' -f2)
-output_dir=$(echo "$content_settings" | cut -d':' -f3)
-filename_template=$(echo "$content_settings" | cut -d':' -f4)
-
-# Set up enhanced yt-dlp options
-YT_DLP_OPTS=(
-    --no-abort-on-error
-    --skip-playlist-after-errors 3
-    --embed-metadata
-    --embed-thumbnail
-    --embed-chapters
-    --add-metadata
-    --xattrs
-    --no-mtime
-    -f "$format"
-)
-
-# Enhanced playlist handling
-if is_playlist; then
-    playlist_name=$(yt-dlp --get-filename -o "%(playlist_title)s" "$url" 2>/dev/null | head -n 1)
-    playlist_name=$(sanitize_filename "$playlist_name")
-    if [ -z "$playlist_name" ] || [ "$playlist_name" == "NA" ]; then
-        playlist_name="playlist_$(date +%Y%m%d_%H%M%S)"
-    fi
-    output_template="$output_dir/$playlist_name/%(playlist_index)s - $filename_template"
+if [[ "$1" =~ ^.*youtu.*$ ]] || [[ "$1" =~ ^.*youtube.*$ ]]; then
+    echo -e "Downloading audio...\\n>URL: ${1}\\n"
+    yt-dlp -x --audio-format mp3 -o "$CHANNEL" "$1"
+elif [[ "$1" =~ ^.*nourlselected.*$ ]]; then
+    echo "There was an error"
 else
-    output_template="$output_dir/$filename_template"
+    echo -e "Downloading video...\\n>URL: ${1}\\n"
+    yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' -o "$CHANNEL" "$1"
 fi
 
-# Enhanced download with better error handling and retry logic
-max_attempts=3
-attempt=1
-while [ $attempt -le $max_attempts ]; do
-    show_progress "$url" "$content_type" "$output_dir"
-    
-    if yt-dlp "${YT_DLP_OPTS[@]}" -o "$output_template" "$url"; then
-        echo "✓ Download completed successfully!"
-        echo "  Saved to: $output_dir"
-        exit 0
-    else
-        error_code=$?
-        echo "✗ Download attempt $attempt failed with error code: $error_code"
-        
-        if [ $attempt -eq $max_attempts ]; then
-            echo "! All download attempts failed. Please check the URL and try again."
-            exit 1
-        fi
-        
-        sleep_time=$((attempt * 5))
-        echo "  Retrying in $sleep_time seconds..."
-        sleep $sleep_time
-        attempt=$((attempt + 1))
-    fi
-done
-
-exit 0
+#read -p "Press enter to continue"
