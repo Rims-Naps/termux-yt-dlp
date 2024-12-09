@@ -6,8 +6,9 @@ GREEN='\e[32m'
 RED='\e[31m'
 NC='\e[0m'
 
-YTDLP_CONFIG_FOLDER="${HOME}/.config/yt-dlp/"
-TERMUXURLOPENER_CONFIG_FOLDER="${HOME}/bin/"
+# Updated paths to ensure correct directory structure
+YTDLP_CONFIG_FOLDER="${HOME}/.config/yt-dlp"
+TERMUX_SCRIPTS_DIR="${HOME}/.termux"
 
 echo -e "${BLUE}Termux YouTube Downloader Installation${NC}"
 echo -e "\n${BLUE}Requirements:${NC}"
@@ -47,13 +48,18 @@ pip install -U yt-dlp
 check_status "Pip packages installation"
 
 echo -e "\n${BLUE}Creating configuration directories...${NC}"
-mkdir -p "$YTDLP_CONFIG_FOLDER" "$TERMUXURLOPENER_CONFIG_FOLDER"
+mkdir -p "$YTDLP_CONFIG_FOLDER" "$TERMUX_SCRIPTS_DIR"
 check_status "Directory creation"
 
 echo -e "\n${BLUE}Copying configuration files...${NC}"
-cp -r yt-dlp ~/.config/
-cp termux-url-opener "${TERMUXURLOPENER_CONFIG_FOLDER}/"
-chmod +x "${TERMUXURLOPENER_CONFIG_FOLDER}/termux-url-opener"
+# Copy yt-dlp config if it exists
+if [ -d "yt-dlp" ]; then
+    cp -r yt-dlp/* "$YTDLP_CONFIG_FOLDER/"
+fi
+
+# Copy URL opener to the correct location
+cp termux-url-opener "$TERMUX_SCRIPTS_DIR/"
+chmod +x "$TERMUX_SCRIPTS_DIR/termux-url-opener"
 check_status "Configuration files setup"
 
 echo -e "\n${GREEN}Installation completed successfully!${NC}"
