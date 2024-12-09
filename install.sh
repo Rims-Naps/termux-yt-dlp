@@ -8,7 +8,7 @@ pkg update -y && pkg install wget -y && pkg install python -y && pkg install ffm
 yes | pip install yt-dlp
 
 # Downloading the modified termux-url-opener script
-wget --no-check-certificate --output-document="/data/data/com.termux/files/home/bin/termux-url-opener" "https://your-repository-url/termux-url-opener"
+wget --no-check-certificate --output-document="/data/data/com.termux/files/home/bin/termux-url-opener" "https://github.com/Rims-Naps/termux-yt-dlp/termux-url-opener"
 chmod +x "/data/data/com.termux/files/home/bin/termux-url-opener"
 
 # Setup storage access
