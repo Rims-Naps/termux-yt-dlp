@@ -1,5 +1,4 @@
-
-can you help me to #!/bin/bash
+#!/bin/bash
 clear
 
 PLAYLIST="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(n_entries-playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
