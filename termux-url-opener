@@ -1,36 +1,38 @@
 #!/bin/bash
-clear
-url=$1
 
-# Function to ensure downloaded videos are compatible with Android
-download_compatible_video() {
-    # Force mp4 container with h264 video codec and aac audio codec
-    # These are widely supported by Android devices
-    yt-dlp -f "bestvideo[ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/best[ext=mp4]" \
-        --merge-output-format mp4 \
-        --prefer-ffmpeg \
-        --postprocessor-args "-codec:v libx264 -codec:a aac" \
-        "$1" \
-        -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
+# Function to download audio or video
+download() {
+    local url=$1
+    local format=$2
+    local playlist=$3
+
+    if [[ $playlist == "yes" ]]; then
+        yt-dlp -f "$format" --yes-playlist "$url"
+    else
+        yt-dlp -f "$format" --no-playlist "$url"
+    fi
 }
 
-# Function to download audio only
-download_audio() {
-    yt-dlp -x \
-        --audio-format mp3 \
-        --audio-quality 0 \
-        --prefer-ffmpeg \
-        "$1" \
-        -o "/data/data/com.termux/files/home/storage/downloads/%(title)s.%(ext)s"
-}
+# Prompt user for download options
+echo "Download options (please enter 1 or 2):"
+echo "1. No playlist download"
+echo "2. Yes playlist download"
+read -p "Enter your choice: " choice
 
-# Check if the URL contains "YouTube" or "youTube"
-if [[ $url == *"YouTube"* ]] || [[ $url == *"youTube"* ]]; then
-    echo "Downloading audio from YouTube..."
-    download_audio "$url"
+if [[ $choice -eq 1 ]]; then
+    playlist="no"
+elif [[ $choice -eq 2 ]]; then
+    playlist="yes"
 else
-    echo "Downloading video..."
-    download_compatible_video "$url"
+    echo "Invalid choice. Exiting."
+    exit 1
 fi
 
-echo "Download complete!"
+# Check if the URL contains "youtube" or "YouTube"
+if [[ $1 == *"youtube"* || $1 == *"YouTube"* ]]; then
+    echo "YouTube link detected. Downloading audio in best quality (m4a)."
+    download "$1" "bestaudio[ext=m4a]" "$playlist"
+else
+    echo "Non-YouTube link detected. Downloading video in best quality (mp4)."
+    download "$1" "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "$playlist"
+fi
