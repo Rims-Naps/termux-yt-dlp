@@ -1,34 +1,40 @@
 #!/bin/bash
-# termux-url-opener script to download YouTube videos or playlists automatically
 
-# Output templates for playlists and channels
-PLAYLIST_OUTPUT="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(n_entries-playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
-CHANNEL_OUTPUT="%(extractor)s/%(uploader)s_%(channel_id)s/%(title)s [%(id)s].%(ext)s"
+# Function to download audio or video
+download() {
+    local url=$1
+    local format=$2
+    local playlist=$3
+    local output_dir="/storage/emulated/0/Download"  # Path to shared storage
 
-# Check if a valid URL is provided
-if [[ -z "$1" ]]; then
-    echo "Error: No URL provided. Please pass a valid URL to the script."
-    exit 1
-fi
-
-# Detect YouTube links
-if [[ "$1" =~ ^.*youtu(be)?.* ]]; then
-    echo "YouTube link detected. Processing..."
-    
-    # Automatically detect if it's a playlist or single video
-    if [[ "$1" =~ .*/playlist.* ]] || [[ "$1" =~ .*list=.* ]]; then
-        OUTPUT_TEMPLATE="$PLAYLIST_OUTPUT"
-        echo "Playlist detected. Using playlist-specific output template."
+    if [[ $playlist == "yes" ]]; then
+        yt-dlp -o "$output_dir/%(title)s.%(ext)s" -f "$format" --yes-playlist "$url"
     else
-        OUTPUT_TEMPLATE="$CHANNEL_OUTPUT"
-        echo "Single video detected. Using channel-specific output template."
+        yt-dlp -o "$output_dir/%(title)s.%(ext)s" -f "$format" --no-playlist "$url"
     fi
+}
 
-    # Download using yt-dlp
-    yt-dlp -o "$OUTPUT_TEMPLATE" "$1"
-
+# Check if the URL contains "youtube" or "YouTube"
+if [[ $1 == *"youtube"* || $1 == *"YouTube"* ]]; then
+    echo "YouTube link detected. Checking if it's a playlist."
+    
+    # Detect if the URL is a playlist
+    if [[ $1 == *"list="* ]]; then
+        echo "Playlist detected. Downloading audio in best quality (m4a)."
+        download "$1" "bestaudio[ext=m4a]" "yes"
+    else
+        echo "Single video detected. Downloading audio in best quality (m4a)."
+        download "$1" "bestaudio[ext=m4a]" "no"
+    fi
 else
-    # Non-YouTube links: Default to best video and audio quality
-    echo "Non-YouTube link detected. Downloading in best video/audio quality..."
-    yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' "$1"
+    echo "Non-YouTube link detected. Checking if it's a playlist."
+    
+    # Detect if the URL is a playlist
+    if [[ $1 == *"list="* ]]; then
+        echo "Playlist detected. Downloading video in best quality (mp4)."
+        download "$1" "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "yes"
+    else
+        echo "Single video detected. Downloading video in best quality (mp4)."
+        download "$1" "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "no"
+    fi
 fi
