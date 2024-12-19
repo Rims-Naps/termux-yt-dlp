@@ -1,40 +1,41 @@
 #!/bin/bash
 
-# Function to download audio or video
-download() {
-    local url=$1
-    local format=$2
-    local playlist=$3
-    local output_dir="/storage/emulated/0/Download"  # Path to shared storage
+# Define output templates for organized downloads
+PLAYLIST="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
+CHANNEL="%(extractor)s/%(uploader)s_%(channel_id)s/%(title)s [%(id)s].%(ext)s"
+VIDEO="%(extractor)s/%(title)s [%(id)s].%(ext)s"
 
-    if [[ $playlist == "yes" ]]; then
-        yt-dlp -o "$output_dir/%(title)s.%(ext)s" -f "$format" --yes-playlist "$url"
+# Function to download the URL using yt-dlp
+download() {
+    local url="$1"
+
+    # Check if the URL is a YouTube link
+    if [[ "$url" =~ .*youtu.* ]] || [[ "$url" =~ .*youtube.* ]]; then
+        echo -e "YouTube link detected: $url"
+
+        # Detect if it's a playlist
+        if [[ "$url" =~ .*/playlist.* ]] || [[ "$url" =~ .*list=.* ]]; then
+            echo "Downloading as a playlist..."
+            yt-dlp -o "$PLAYLIST" "$url"
+        elif [[ "$url" =~ .*/channel.* ]] || [[ "$url" =~ .*channel.* ]]; then
+            echo "Downloading as a channel..."
+            yt-dlp -o "$CHANNEL" "$url"
+        else
+            echo "Downloading as a single video..."
+            yt-dlp -f "bestaudio[ext=m4a]" --extract-audio --audio-format m4a -o "$VIDEO" "$url"
+        fi
     else
-        yt-dlp -o "$output_dir/%(title)s.%(ext)s" -f "$format" --no-playlist "$url"
+        echo "Non-YouTube link detected: $url"
+        echo "Downloading best quality video..."
+        yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" -o "$VIDEO" "$url"
     fi
 }
 
-# Check if the URL contains "youtube" or "YouTube"
-if [[ $1 == *"youtube"* || $1 == *"YouTube"* ]]; then
-    echo "YouTube link detected. Checking if it's a playlist."
-    
-    # Detect if the URL is a playlist
-    if [[ $1 == *"list="* ]]; then
-        echo "Playlist detected. Downloading audio in best quality (m4a)."
-        download "$1" "bestaudio[ext=m4a]" "yes"
-    else
-        echo "Single video detected. Downloading audio in best quality (m4a)."
-        download "$1" "bestaudio[ext=m4a]" "no"
-    fi
-else
-    echo "Non-YouTube link detected. Checking if it's a playlist."
-    
-    # Detect if the URL is a playlist
-    if [[ $1 == *"list="* ]]; then
-        echo "Playlist detected. Downloading video in best quality (mp4)."
-        download "$1" "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "yes"
-    else
-        echo "Single video detected. Downloading video in best quality (mp4)."
-        download "$1" "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "no"
-    fi
+# Main entry point - the URL passed to the script is in "$1"
+if [[ -z "$1" ]]; then
+    echo "No URL provided. Exiting."
+    exit 1
 fi
+
+# Call the download function with the URL
+download "$1"
