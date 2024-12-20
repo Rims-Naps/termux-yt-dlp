@@ -1,41 +1,51 @@
 #!/bin/bash
 
-# Define output templates for organized downloads
-PLAYLIST="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
-CHANNEL="%(extractor)s/%(uploader)s_%(channel_id)s/%(title)s [%(id)s].%(ext)s"
-VIDEO="%(extractor)s/%(title)s [%(id)s].%(ext)s"
+# This script handles URL sharing in Termux for downloading media
+# It automatically detects YouTube URLs and playlists
+# Downloads audio-only for YouTube links and video+audio for other sites
 
-# Function to download the URL using yt-dlp
-download() {
-    local url="$1"
-
-    # Check if the URL is a YouTube link
-    if [[ "$url" =~ .*youtu.* ]] || [[ "$url" =~ .*youtube.* ]]; then
-        echo -e "YouTube link detected: $url"
-
-        # Detect if it's a playlist
-        if [[ "$url" =~ .*/playlist.* ]] || [[ "$url" =~ .*list=.* ]]; then
-            echo "Downloading as a playlist..."
-            yt-dlp -o "$PLAYLIST" "$url"
-        elif [[ "$url" =~ .*/channel.* ]] || [[ "$url" =~ .*channel.* ]]; then
-            echo "Downloading as a channel..."
-            yt-dlp -o "$CHANNEL" "$url"
-        else
-            echo "Downloading as a single video..."
-            yt-dlp -f "bestaudio[ext=m4a]" --extract-audio --audio-format m4a -o "$VIDEO" "$url"
-        fi
-    else
-        echo "Non-YouTube link detected: $url"
-        echo "Downloading best quality video..."
-        yt-dlp -f "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" -o "$VIDEO" "$url"
-    fi
-}
-
-# Main entry point - the URL passed to the script is in "$1"
-if [[ -z "$1" ]]; then
-    echo "No URL provided. Exiting."
+# Check if URL argument is provided
+if [ -z "$1" ]; then
+    echo "Error: Please provide a URL as an argument"
+    echo "Usage: $0 <URL>"
     exit 1
 fi
 
-# Call the download function with the URL
-download "$1"
+# Set the base download directory to Android's shared storage
+DOWNLOAD_DIR="/storage/emulated/0/Download"
+
+# Create the download directory if it doesn't exist
+mkdir -p "$DOWNLOAD_DIR"
+
+# Output template for playlists - organizes files in folders by playlist
+PLAYLIST="$DOWNLOAD_DIR/%(extractor)s/playlists/%(playlist_title)s/%(playlist_index)s - %(title)s.%(ext)s"
+
+# Output template for single videos - organizes files by channel/uploader
+SINGLE="$DOWNLOAD_DIR/%(extractor)s/%(uploader)s/%(title)s.%(ext)s"
+
+# Function to download media
+download() {
+    local url=$1
+    local format=$2
+    local output=$3
+    
+    yt-dlp --no-mtime -S "ext" -f "$format" -o "$output" "$url"
+}
+
+# Check if URL contains YouTube
+if [[ "$1" =~ ^.*youtu.*$ ]] || [[ "$1" =~ ^.*youtube.*$ ]]; then
+    echo "YouTube link detected. Downloading audio in best quality..."
+    
+    # Check if URL is a playlist
+    if [[ "$1" =~ .*/playlist.* ]] || [[ "$1" =~ .*list=.* ]]; then
+        echo "Playlist detected, using playlist output template"
+        download "$1" "bestaudio[ext=m4a]" "$PLAYLIST"
+    else
+        echo "Single video detected, using single video output template"
+        download "$1" "bestaudio[ext=m4a]" "$SINGLE"
+    fi
+    
+else
+    echo "Non-YouTube link detected. Downloading video in best quality..."
+    download "$1" "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" "$SINGLE"
+fi
