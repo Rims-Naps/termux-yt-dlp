@@ -1,51 +1,26 @@
 #!/bin/bash
 
-# This script handles URL sharing in Termux for downloading media
-# It automatically detects YouTube URLs and playlists
-# Downloads audio-only for YouTube links and video+audio for other sites
+# Define output paths
+SHARED_STORAGE_PATH="/data/data/com.termux/files/home/storage/shared/yt-dlp"
+PLAYLIST_TEMPLATE="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(n_entries-playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
+SINGLE_VIDEO_TEMPLATE="%(extractor)s/%(uploader)s_%(channel_id)s/%(title)s [%(id)s].%(ext)s"
 
-# Check if URL argument is provided
-if [ -z "$1" ]; then
-    echo "Error: Please provide a URL as an argument"
-    echo "Usage: $0 <URL>"
-    exit 1
-fi
+# Ensure output directory exists
+mkdir -p "$SHARED_STORAGE_PATH"
 
-# Set the base download directory to Android's shared storage
-DOWNLOAD_DIR="/storage/emulated/0/Download"
-
-# Create the download directory if it doesn't exist
-mkdir -p "$DOWNLOAD_DIR"
-
-# Output template for playlists - organizes files in folders by playlist
-PLAYLIST="$DOWNLOAD_DIR/%(extractor)s/playlists/%(playlist_title)s/%(playlist_index)s - %(title)s.%(ext)s"
-
-# Output template for single videos - organizes files by channel/uploader
-SINGLE="$DOWNLOAD_DIR/%(extractor)s/%(uploader)s/%(title)s.%(ext)s"
-
-# Function to download media
-download() {
-    local url=$1
-    local format=$2
-    local output=$3
-    
-    yt-dlp --no-mtime -S "ext" -f "$format" -o "$output" "$url"
-}
-
-# Check if URL contains YouTube
-if [[ "$1" =~ ^.*youtu.*$ ]] || [[ "$1" =~ ^.*youtube.*$ ]]; then
-    echo "YouTube link detected. Downloading audio in best quality..."
-    
-    # Check if URL is a playlist
-    if [[ "$1" =~ .*/playlist.* ]] || [[ "$1" =~ .*list=.* ]]; then
-        echo "Playlist detected, using playlist output template"
-        download "$1" "bestaudio[ext=m4a]" "$PLAYLIST"
+# Check if URL contains "youtube" or is from other supported sites
+if [[ "$1" =~ youtube|youtu ]]; then
+    echo "YouTube link detected. Downloading in appropriate format..."
+    if [[ "$1" =~ .*/playlist.* || "$1" =~ .*list=.* ]]; then
+        echo "Playlist detected. Downloading..."
+        yt-dlp -o "$SHARED_STORAGE_PATH/$PLAYLIST_TEMPLATE" "$1"
     else
-        echo "Single video detected, using single video output template"
-        download "$1" "bestaudio[ext=m4a]" "$SINGLE"
+        echo "Single video detected. Downloading..."
+        yt-dlp -o "$SHARED_STORAGE_PATH/$SINGLE_VIDEO_TEMPLATE" --format "bestaudio[ext=m4a]" "$1"
     fi
-    
 else
-    echo "Non-YouTube link detected. Downloading video in best quality..."
-    download "$1" "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best" "$SINGLE"
+    echo "Non-YouTube link detected. Downloading video..."
+    yt-dlp -o "$SHARED_STORAGE_PATH/%(title)s [%(id)s].%(ext)s" --format "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "$1"
 fi
+
+echo "Download complete. Files saved to: $SHARED_STORAGE_PATH"
