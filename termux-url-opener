@@ -1,13 +1,10 @@
 #!/bin/bash
-
 # Define output paths
-SHARED_STORAGE_PATH="/data/data/com.termux/files/home/storage/shared/yt-dlp"
+SHARED_STORAGE_PATH="/data/data/com.termux/files/home/storage/shared/Movies/vid/yt-dlp"
 PLAYLIST_TEMPLATE="%(extractor)s/playlists/%(playlist_title)s_%(playlist_id)s/%(n_entries-playlist_index)03d - %(uploader)s_%(channel_id)s - %(title)s [%(id)s].%(ext)s"
 SINGLE_VIDEO_TEMPLATE="%(extractor)s/%(uploader)s_%(channel_id)s/%(title)s [%(id)s].%(ext)s"
-
 # Ensure output directory exists
 mkdir -p "$SHARED_STORAGE_PATH"
-
 # Check if URL contains "youtube" or is from other supported sites
 if [[ "$1" =~ youtube|youtu ]]; then
     echo "YouTube link detected. Downloading in appropriate format..."
@@ -18,9 +15,11 @@ if [[ "$1" =~ youtube|youtu ]]; then
         echo "Single video detected. Downloading..."
         yt-dlp -o "$SHARED_STORAGE_PATH/$SINGLE_VIDEO_TEMPLATE" --format "bestaudio[ext=m4a]" "$1"
     fi
+elif [[ "$1" =~ xhamster ]]; then
+    echo "xHamster link detected. Downloading with generic extractor..."
+    yt-dlp --force-generic-extractor -o "$SHARED_STORAGE_PATH/%(title)s [%(id)s].%(ext)s" --format "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "$1"
 else
     echo "Non-YouTube link detected. Downloading video..."
     yt-dlp -o "$SHARED_STORAGE_PATH/%(title)s [%(id)s].%(ext)s" --format "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best" "$1"
 fi
-
 echo "Download complete. Files saved to: $SHARED_STORAGE_PATH"
