@@ -17,7 +17,7 @@ chmod +x "/data/data/com.termux/files/home/bin/termux-url-opener"
 termux-setup-storage
 
 # Create shared storage directory for yt-dlp
-SHARED_STORAGE_PATH="/data/data/com.termux/files/home/storage/shared/yt-dlp"
+SHARED_STORAGE_PATH="/data/data/com.termux/files/home/storage/shared/Movies/vid/yt-dlp"
 mkdir -p "$SHARED_STORAGE_PATH"
 
 echo "Installation complete. Ensure storage permissions are granted to Termux!"
